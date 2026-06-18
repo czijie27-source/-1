@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>风域云图 | 风力发电机组结构健康监测与全景预警平台</title>
+    <meta
+      name="description"
+      content="风域云图是面向风力发电机组大部件预测性维护的结构健康监测与全景预警平台，融合云边协同、机理与 AI 双驱诊断、RUL 预测和人机协同派单能力。"
+    />
+    <link rel="stylesheet" href="styles.css?v=29" />
+  </head>
+  <body>
+    <div id="app" class="cloud-app">
+      <aside class="cloud-sidebar" aria-label="平台功能导航">
+        <header class="cloud-brand">
+          <div class="brand-mark">风</div>
+          <div>
+            <strong>风域云图</strong>
+            <span>Wind Twin Cloud v1.0</span>
+          </div>
+        </header>
+
+        <nav class="cloud-nav" aria-label="主功能区">
+          <button
+            v-for="item in navItems"
+            :key="item.id"
+            type="button"
+            :class="['cloud-nav-item', { active: activePageId === item.id }]"
+            @click="setActivePage(item.id)"
+          >
+            <span class="nav-icon">{{ item.icon }}</span>
+            <span class="nav-copy">
+              <strong>{{ item.title }}</strong>
+              <small>{{ item.desc }}</small>
+            </span>
+            <em v-if="item.badge">{{ item.badge }}</em>
+          </button>
+        </nav>
+
+        <section class="sidebar-workbench">
+          <div class="section-heading compact">
+            <span>{{ activePageId === 'settings' ? '链路状态' : '预警索引' }}</span>
+            <small>{{ activePageId === 'settings' ? 'Online' : filteredDefects.length + ' / 27' }}</small>
+          </div>
+
+          <div v-if="activePageId === 'settings'" class="link-list">
+            <article><span class="live-dot"></span><strong>边缘网关</strong><small>断点续传</small></article>
+            <article><span class="live-dot"></span><strong>SCADA + CMS</strong><small>毫秒对齐</small></article>
+            <article><span class="live-dot"></span><strong>WindGPT</strong><small>RAG 在线</small></article>
+          </div>
+
+          <template v-else>
+            <section class="filter-block">
+              <label>预警类型过滤</label>
+              <div class="filter-switch" role="group" aria-label="预警类型过滤">
+                <button
+                  v-for="item in filterOptions"
+                  :key="item.id"
+                  type="button"
+                  :class="{ active: filterType === item.id }"
+                  :aria-pressed="filterType === item.id"
+                  @click="setFilterType(item.id)"
+                >
+                  <span>{{ item.label }}</span>
+                  <em>{{ item.count }}</em>
+                </button>
+              </div>
+            </section>
+
+            <section class="defect-list" aria-label="风机部件预警列表">
+              <button
+                v-for="item in filteredDefects"
+                :key="item.id"
+                type="button"
+                :data-defect-id="item.id"
+                :aria-label="'查看风机预警：' + item.name"
+                :class="['defect-card', { active: selectedDefect && selectedDefect.id === item.id }]"
+                @click="openDefect(item)"
+              >
+                <span class="defect-card-top">
+                  <span :class="['mode-dot', item.mode]"></span>
+                  <strong>{{ item.name }}</strong>
+                  <em :class="item.level === '中风险' ? 'warning' : 'danger'">{{ item.level }}</em>
+                </span>
+                <span class="defect-meta">
+                  <span>{{ item.coordStr }}</span>
+                  <span>{{ item.precision }}</span>
+                </span>
+              </button>
+            </section>
+          </template>
+        </section>
+
+        <footer class="cloud-user">
+          <div>运</div>
+          <span><strong>运维主管</strong><small>云端在线</small></span>
+        </footer>
+      </aside>
+
+      <div class="cloud-main">
+        <header class="cloud-topbar">
+          <div class="topbar-title">
+            <p class="eyebrow">{{ activePage.eyebrow }}</p>
+            <h1>{{ activePage.title }}</h1>
+            <span>{{ activePage.desc }}</span>
+          </div>
+          <div class="topbar-actions">
+            <label class="search-shell">
+              <span>⌕</span>
+              <input type="search" placeholder="搜索风机、部件、工单..." />
+            </label>
+            <span class="live-indicator">实时监控中</span>
+            <button type="button" @click="setActivePage('video')">实况</button>
+            <button type="button" @click="setActivePage('report')">报告</button>
+          </div>
+        </header>
+
+        <section class="cloud-kpis" aria-label="平台关键指标">
+          <article>
+            <span>数据恢复</span>
+            <strong>100%</strong>
+            <small>弱网断点续传</small>
+          </article>
+          <article>
+            <span>诊断准确率</span>
+            <strong>≥98.1%</strong>
+            <small>机理 + AI</small>
+          </article>
+          <article>
+            <span>提前预警</span>
+            <strong>35-50h</strong>
+            <small>RUL 预测窗口</small>
+          </article>
+          <article>
+            <span>响应效率</span>
+            <strong>80 倍</strong>
+            <small>协同派单</small>
+          </article>
+        </section>
+
+        <section class="mission-strip" aria-label="当前监测任务">
+          <div class="mission-identity">
+            <span class="mission-icon" aria-hidden="true">
+              <svg viewBox="0 0 40 40" focusable="false">
+                <path d="M20 18v16M15 34h10M20 18l-8-6M20 18l9-5M20 18l-1 10" />
+                <circle cx="20" cy="18" r="3" />
+              </svg>
+            </span>
+            <div>
+              <small>当前监测任务</small>
+              <strong>WF-HB-07 · 华北风场 A 区</strong>
+            </div>
+          </div>
+          <div class="mission-progress">
+            <div>
+              <span>任务进度</span>
+              <strong>78%</strong>
+            </div>
+            <i><em></em></i>
+          </div>
+          <div class="mission-stats">
+            <article><span>当前机组</span><strong>WT-07</strong></article>
+            <article><span>边缘网关</span><strong>EDGE-03</strong></article>
+            <article><span>云端同步</span><strong class="online">实时在线</strong></article>
+          </div>
+        </section>
+
+        <div :class="['workspace-grid', { single: activePageId !== 'twin' }]">
+          <section v-if="activePageId === 'overview'" class="function-page overview-page">
+            <div class="overview-hero">
+              <div>
+                <p class="eyebrow">Operation Overview</p>
+                <h2>风场结构健康全景预警平台</h2>
+                <span>把场站态势、机组健康、早期预警、寿命预测和合规派单汇聚在一个首页，实现“一屏观全场”。</span>
+              </div>
+              <button type="button" @click="setActivePage('twin')">进入三维孪生</button>
+            </div>
+
+            <div class="overview-layout">
+              <section class="overview-map">
+                <div class="map-head">
+                  <div>
+                    <strong>今日风场态势</strong>
+                    <span>华北风场 A 区 · 24 台机组 · 数据回传正常</span>
+                  </div>
+                  <em>LIVE</em>
+                </div>
+                <div class="route-canvas" aria-label="风场机组态势图">
+                  <span class="route-line"></span>
+                  <span class="route-node node-a"></span>
+                  <span class="route-node node-b"></span>
+                  <span class="route-node node-c"></span>
+                  <span class="route-node node-d"></span>
+                  <span class="route-scan"></span>
+                  <div class="route-card primary">
+                    <small>在线机组</small>
+                    <strong>24 / 24</strong>
+                  </div>
+                  <div class="route-card secondary">
+                    <small>新增高风险预警</small>
+                    <strong>3 项</strong>
+                  </div>
+                </div>
+              </section>
+
+              <aside class="overview-feed">
+                <div class="media-title"><span>平台事件流</span><small>Cloud Events</small></div>
+                <article>
+                  <strong>WindGPT 已完成诊断</strong>
+                  <span>{{ selectedDefect ? selectedDefect.name : '齿轮箱二级齿轮点蚀' }} · 等待运维经理确权</span>
+                </article>
+                <article>
+                  <strong>弱网缓存已完成续传</strong>
+                  <span>EDGE-03 离线缓存 1.6 小时，数据恢复成功率 100%。</span>
+                </article>
+                <article>
+                  <strong>全场 SCADA + CMS 在线</strong>
+                  <span>多协议归一接入，时序数据毫秒级对齐。</span>
+                </article>
+              </aside>
+            </div>
+
+            <div class="overview-modules">
+              <article v-for="module in modules" :key="module.title" :style="{ '--module-color': module.color }">
+                <span></span>
+                <strong>{{ module.title }}</strong>
+                <p>{{ module.desc }}</p>
+              </article>
+            </div>
+
+          </section>
+
+          <div class="twin-workspace" v-if="activePageId === 'twin'">
+          <main class="twin-stage" aria-label="风机数字孪生场景">
+            <div class="stage-toolbar">
+              <div><span class="live-dot"></span>WebSocket <strong>实时在线</strong></div>
+              <div>SCADA + CMS 毫秒对齐</div>
+              <div>机理特征 + CNN-BiGRU</div>
+            </div>
+            <div class="vr-hint">拖拽旋转 · 滚轮缩放 · VR 查看</div>
+            <section class="stage-inspector" aria-label="当前流程说明">
+              <div class="inspector-head">
+                <span>{{ activeWorkflow.step }}</span>
+                <strong>{{ activeWorkflow.title }}</strong>
+              </div>
+              <p>{{ activeWorkflow.desc }}</p>
+              <div class="inspector-grid">
+                <article><span>当前机组</span><strong>WT-07</strong></article>
+                <article><span>运行风速</span><strong>8.6 m/s</strong></article>
+                <article><span>健康指数 HI</span><strong>0.72</strong></article>
+                <article><span>边缘数据包</span><strong>已同步</strong></article>
+              </div>
+            </section>
+            <div id="three-container" class="three-container"></div>
+            <div class="stage-title">
+              <p class="eyebrow">Real-Time Digital Twin</p>
+              <h2>风机大部件健康状态实时感知</h2>
+              <p>点击侧边栏预警列表或 3D 标记点，穿透查看齿轮箱、主轴承与叶片的诊断和寿命预测。</p>
+            </div>
+          </main>
+
+          <aside class="right-panel" aria-label="诊断详情">
+            <section class="detail-header">
+              <div>
+                <p class="eyebrow">Multimodal Alignment</p>
+                <h2>{{ activePageId === 'video' ? '实况循环回放' : '多模态原位对齐' }}</h2>
+              </div>
+              <span class="status-pill">在线</span>
+            </section>
+
+            <section v-if="selectedDefect" class="detail-content">
+              <div class="detail-stats">
+                <article><span>机组 / 部件定位</span><strong>{{ selectedDefect.coordStr }}</strong></article>
+                <article><span>剩余寿命预测</span><strong>{{ selectedDefect.depth }}</strong></article>
+              </div>
+
+              <section class="record-card">
+                <div class="record-head">
+                  <span>监测记录</span>
+                  <strong>{{ selectedDefect.recordId }}</strong>
+                </div>
+                <div class="record-grid">
+                  <span>采集时间</span><strong>{{ selectedDefect.time }}</strong>
+                  <span>场站机位</span><strong>{{ selectedDefect.ring }}</strong>
+                  <span>工况状态</span><strong>{{ selectedDefect.pose }}</strong>
+                  <span>交付状态</span><strong>{{ selectedDefect.status }}</strong>
+                </div>
+              </section>
+
+              <section class="media-card">
+                <div class="media-title">
+                  <span>{{ currentMedia.title || (selectedDefect.mode === 'surface' ? 'CMS 振动频谱异常识别' : 'SCADA 多变量健康趋势') }}</span>
+                  <small>{{ currentMedia.videoSrc ? 'Live Video' : 'Live Loop' }}</small>
+                </div>
+                <div :class="['media-frame', 'live-loop', { playing: activeEvidence }]">
+                  <video
+                    v-if="currentMedia.videoSrc"
+                    :src="currentMedia.videoSrc"
+                    :poster="currentMedia.src"
+                    preload="none"
+                    autoplay
+                    muted
+                    loop
+                    playsinline
+                    controls
+                  ></video>
+                  <img v-else :src="currentMedia.src || selectedDefect.img" :alt="currentMedia.title || selectedDefect.name" loading="lazy" decoding="async" />
+                  <div
+                    v-if="selectedDefect.mode === 'surface' && !currentMedia.videoSrc"
+                    class="detect-box"
+                    :style="selectedDefect.boxStyle"
+                  >
+                    <span>AI · {{ selectedDefect.name }}</span>
+                  </div>
+                  <div v-else class="ultrasound-overlay"></div>
+                  <div v-if="!currentMedia.videoSrc" class="video-sim-overlay">
+                    <span class="play-badge">实况循环</span>
+                    <span class="scan-line"></span>
+                    <span class="video-progress"></span>
+                  </div>
+                </div>
+              </section>
+
+              <section class="evidence-card">
+                <div class="media-title">
+                  <span>现场证据帧</span>
+                  <small>Signal · Position · RUL</small>
+                </div>
+                <div class="evidence-grid">
+                  <button
+                    v-for="asset in evidenceAssets"
+                    :key="asset.title"
+                    type="button"
+                    :class="{ active: activeEvidence && activeEvidence.title === asset.title }"
+                    @click="selectEvidence(asset); setActivePage('video')"
+                  >
+                    <img :src="asset.src" :alt="asset.title" loading="lazy" decoding="async" />
+                    <span>{{ asset.title }}</span>
+                  </button>
+                </div>
+              </section>
+
+              <section class="gpt-card">
+                <div class="gpt-heading">
+                  <div>
+                    <p class="eyebrow">WindGPT</p>
+                    <h3>预测性维护建议</h3>
+                  </div>
+                  <span>LLM + RAG</span>
+                </div>
+                <article><strong>严重等级评定</strong><p>{{ selectedDefect.gptReport.levelDesc }}</p></article>
+                <article><strong>故障根因分析</strong><p>{{ selectedDefect.gptReport.reason }}</p></article>
+                <article><strong>合规维修建议</strong><p>{{ selectedDefect.gptReport.advice }}</p></article>
+              </section>
+            </section>
+          </aside>
+          </div>
+
+          <section v-if="activePageId === 'defects'" class="function-page defects-page">
+            <div class="function-head">
+              <div>
+                <p class="eyebrow">Defect Registry</p>
+                <h2>预警管理台</h2>
+                <span>按数据来源、风险等级、机组部件和派单状态管理早期故障。</span>
+              </div>
+              <button type="button" @click="filterType = 'all'">同步 27 项</button>
+            </div>
+            <div class="function-grid three">
+              <article><span>CMS 振动预警</span><strong>18</strong><small>齿轮箱 / 轴承 / 主轴</small></article>
+              <article><span>SCADA 工况预警</span><strong>9</strong><small>温度 / 转速 / 载荷</small></article>
+              <article><span>待确权工单</span><strong>6</strong><small>高风险优先</small></article>
+            </div>
+            <div class="data-card">
+              <table class="cloud-table">
+                <thead>
+                  <tr><th>故障预警</th><th>来源</th><th>等级</th><th>机组 / 部件</th><th>模型输出</th><th>状态</th></tr>
+                </thead>
+                <tbody>
+                  <tr v-for="item in filteredDefects" :key="item.id" @click="selectDefect(item)">
+                    <td><strong>{{ item.name }}</strong><small>{{ item.recordId }}</small></td>
+                    <td>{{ item.mode === 'surface' ? 'CMS 振动' : 'SCADA 工况' }}</td>
+                    <td><span :class="['table-tag', item.level === '中风险' ? 'warning' : 'danger']">{{ item.level }}</span></td>
+                    <td>{{ item.coordStr }}</td>
+                    <td>{{ item.precision }}</td>
+                    <td>{{ item.status }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section v-if="activePageId === 'video' && selectedDefect" class="function-page video-page">
+            <div class="function-head">
+              <div>
+                <p class="eyebrow">Live Playback</p>
+                <h2>实况循环回放</h2>
+                <span>选择证据帧后自动循环播放，模拟现场采集视频流。</span>
+              </div>
+              <button type="button" @click="activeEvidence = evidenceAssets[0]">播放总览</button>
+            </div>
+            <div class="video-layout">
+              <section class="media-card large-player">
+                <div class="media-title">
+                  <span>{{ currentMedia.title || '预警实况画面' }}</span>
+                  <small>{{ currentMedia.videoSrc ? 'Live Video' : 'Live Loop' }}</small>
+                </div>
+                <div :class="['media-frame', 'live-loop', { playing: activeEvidence }]">
+                  <video v-if="currentMedia.videoSrc" :src="currentMedia.videoSrc" :poster="currentMedia.src" preload="none" autoplay muted loop playsinline controls></video>
+                  <img v-else :src="currentMedia.src || selectedDefect.img" :alt="currentMedia.title || selectedDefect.name" loading="lazy" decoding="async" />
+                  <div v-if="!currentMedia.videoSrc" class="video-sim-overlay">
+                    <span class="play-badge">实况循环</span>
+                    <span class="scan-line"></span>
+                    <span class="video-progress"></span>
+                  </div>
+                </div>
+              </section>
+              <section class="evidence-card">
+                <div class="media-title"><span>视频源选择</span><small>Evidence Sources</small></div>
+                <div class="evidence-grid">
+                  <button
+                    v-for="asset in evidenceAssets"
+                    :key="asset.title"
+                    type="button"
+                    :class="{ active: activeEvidence && activeEvidence.title === asset.title, featured: asset.featured }"
+                    @click="selectEvidence(asset)"
+                  >
+                    <img :src="asset.src" :alt="asset.title" loading="lazy" decoding="async" />
+                    <span>{{ asset.title }}</span>
+                  </button>
+                </div>
+              </section>
+            </div>
+          </section>
+
+          <section v-if="activePageId === 'report' && selectedDefect" class="function-page report-page">
+            <div class="function-head">
+              <div>
+                <p class="eyebrow">WindGPT Report</p>
+                <h2>报告中心</h2>
+                <span>结合运维手册、维修档案与安全规范生成可确权工单。</span>
+              </div>
+              <button type="button">导出报告</button>
+            </div>
+            <div class="report-layout">
+              <section class="gpt-card report-main">
+                <div class="gpt-heading">
+                  <div><p class="eyebrow">WindGPT</p><h3>{{ selectedDefect.name }}</h3></div>
+                  <span>LLM + RAG</span>
+                </div>
+                <article><strong>严重等级评定</strong><p>{{ selectedDefect.gptReport.levelDesc }}</p></article>
+                <article><strong>故障根因分析</strong><p>{{ selectedDefect.gptReport.reason }}</p></article>
+                <article><strong>合规维修建议</strong><p>{{ selectedDefect.gptReport.advice }}</p></article>
+              </section>
+              <aside class="report-side">
+                <article><span>报告编号</span><strong>{{ selectedDefect.recordId }}</strong></article>
+                <article><span>生成状态</span><strong>已完成</strong></article>
+                <article><span>派单优先级</span><strong>{{ selectedDefect.level === '高风险' ? '高' : '中' }}</strong></article>
+                <article><span>证据附件</span><strong>5 组</strong></article>
+              </aside>
+            </div>
+          </section>
+
+          <section v-if="activePageId === 'settings'" class="function-page settings-page">
+            <div class="function-head">
+              <div>
+                <p class="eyebrow">System Control</p>
+                <h2>系统设置</h2>
+                <span>查看风机侧感知、边缘网关、数据治理和云端模型服务状态。</span>
+              </div>
+              <button type="button">刷新链路</button>
+            </div>
+            <div class="settings-grid">
+              <article><span class="live-dot"></span><strong>SCADA 工况接入</strong><p>温度、转速、载荷数据已接入，毫秒级时序对齐。</p></article>
+              <article><span class="live-dot"></span><strong>CMS 振动监测</strong><p>齿轮箱、主轴承振动信号在线，特征持续提取。</p></article>
+              <article><span class="live-dot"></span><strong>边缘缓存网关</strong><p>支持断网 2 小时，续传启动响应 ≤1.5 秒。</p></article>
+              <article><span class="live-dot"></span><strong>机理 + AI 引擎</strong><p>诊断准确率 ≥98.1%，变工况误报率降低 80%。</p></article>
+              <article><span class="live-dot"></span><strong>WindGPT 服务</strong><p>RAG 知识库在线，预案秒级生成并等待人工确权。</p></article>
+              <article><span class="live-dot"></span><strong>TSDB 数据治理</strong><p>数据质量 ≥99.9%，全场站秒级检索。</p></article>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <script src="site-assets/vendor/vue.global.prod.js"></script>
+    <script src="app.js?v=29"></script>
+  </body>
+</html>
