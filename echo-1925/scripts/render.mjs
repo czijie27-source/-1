@@ -2,6 +2,7 @@
 //   node scripts/render.mjs              → output/回响1925.mp4（1920×1080，H.264 + AAC）+ 封面 + SRT
 //   node scripts/render.mjs --preview    → output/preview_960x540.mp4（低分辨率预览）
 //   node scripts/render.mjs --cover-only → 仅输出 output/封面.png
+//   --master                             → 额外保留高码率母版 output/回响1925_master.mp4（约 1.3GB）
 //   --allow-no-narration                 → 旁白缺失时仍然渲染（成片会标记为“无旁白版”）
 import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -62,8 +63,8 @@ await renderMedia({
   puppeteerInstance: browser,
   inputProps: { subtitles: true, audio: true },
   scale: preview ? 0.5 : 1,
-  crf: preview ? 26 : 20,
-  x264Preset: preview ? "veryfast" : "slow",
+  crf: preview ? 22 : 18,
+  x264Preset: "veryfast",
   pixelFormat: "yuv420p",
   audioCodec: "aac",
   audioBitrate: "192k",
@@ -82,14 +83,21 @@ await renderMedia({
 });
 await browser.close({ silent: true });
 
-// 响度标准化（EBU R128，-16 LUFS / -1.5 dBTP，适合网络播放）；视频流直接复制，不再二次压缩
+// 交付编码：胶片颗粒每帧都不同，高画质母版约 50Mbps。这里统一转为标准 yuv420p（TV 范围），
+// 两遍编码到约 3.3Mbps（成片约 90MB，便于提交与网络播放），同时做 EBU R128 响度标准化（-16 LUFS）。
 if (hasFfmpeg) {
-  console.log("▶ 响度标准化 …");
-  execFileSync("ffmpeg", ["-y", "-v", "error", "-i", raw, "-c:v", "copy", "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-movflags", "+faststart", final]);
-  fs.rmSync(raw);
+  console.log("▶ 交付编码与响度标准化 …");
+  const vf = ["-vf", "scale=in_range=pc:out_range=tv,format=yuv420p"];
+  const passlog = path.join(out, "x264pass");
+  const vb = preview ? "1500k" : "3300k";
+  execFileSync("ffmpeg", ["-y", "-v", "error", "-i", raw, ...vf, "-c:v", "libx264", "-preset", "slow", "-b:v", vb, "-pass", "1", "-passlogfile", passlog, "-an", "-f", "mp4", process.platform === "win32" ? "NUL" : "/dev/null"]);
+  execFileSync("ffmpeg", ["-y", "-v", "error", "-i", raw, ...vf, "-c:v", "libx264", "-preset", "slow", "-b:v", vb, "-maxrate", preview ? "3000k" : "6000k", "-bufsize", "12000k", "-pass", "2", "-passlogfile", passlog, "-color_range", "tv", "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-movflags", "+faststart", final]);
+  for (const f of fs.readdirSync(out)) if (f.startsWith("x264pass")) fs.rmSync(path.join(out, f));
+  if (args.has("--master") && !preview) fs.renameSync(raw, path.join(out, "回响1925_master.mp4"));
+  else fs.rmSync(raw);
 } else {
   fs.renameSync(raw, final);
-  console.log("  （未检测到系统 ffmpeg，跳过响度标准化）");
+  console.log("  （未检测到系统 ffmpeg，跳过交付编码与响度标准化，直接输出母版）");
 }
 console.log(`✓ ${path.relative(root, final)}  用时 ${((Date.now() - t0) / 60000).toFixed(1)} 分钟`);
 

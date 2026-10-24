@@ -7,7 +7,7 @@
 | --- | --- |
 | 时长 | 210 秒（6300 帧） |
 | 分辨率 / 帧率 | 1920×1080 / 30fps |
-| 编码 | H.264（yuv420p）+ AAC 192kbps，MP4 |
+| 编码 | H.264 High（yuv420p，两遍编码约 3.3Mbps，约 92MB）+ AAC 192kbps，MP4，响度 -16 LUFS |
 | 语言 / 字幕 | 简体中文旁白 + 画面内字幕 + 独立 SRT |
 
 ## 成品文件
@@ -118,7 +118,8 @@ echo-1925/
 
 - **渲染时下载 Chrome 失败**：设置 `REMOTION_BROWSER_EXECUTABLE` 指向本机 Chrome/Chromium（或 Playwright 安装的 chrome-headless-shell）。
 - **中文显示为方块**：字体子集只包含 GB2312 一级字与工程内用到的字。新增生僻字后，下载思源宋体/黑体 OTF 放进 `fonts-src/`，运行 `python3 scripts/subset_fonts.py fonts-src`。
-- **渲染慢**：成片约 6300 帧，4 核机器约 20–40 分钟。先用 `npm run render:preview` 检查。
+- **渲染慢**：成片 6300 帧，4 核机器上渲染约 27 分钟，再加约 7 分钟交付编码。可以先用 `npm run render:preview` 检查（约 15 分钟）。
+- **想要更高画质**：胶片颗粒每帧都不同，高画质母版约 50Mbps（1.3GB）。运行 `node scripts/render.mjs --master` 会额外保留 `output/回响1925_master.mp4`；也可以修改 `scripts/render.mjs` 中的 `vb`（交付码率）。
 - **Edge TTS 能不能用？** 可以。只要生成逐句音频放进 `public/audio/narration_cues/` 即可走同一套排布与字幕流程。本工程默认使用完全离线的 Kokoro，避免依赖网络服务。
 
 ## 关于本片的真实性说明
