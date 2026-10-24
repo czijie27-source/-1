@@ -1,0 +1,27 @@
+{
+  "name": "echo-1925",
+  "version": "1.0.0",
+  "private": true,
+  "description": "《回响·1925》—— 1925年焦作煤矿工人大罢工历史纪录短片（Remotion 工程）",
+  "scripts": {
+    "dev": "remotion studio",
+    "audio": "python3 scripts/prepare_audio.py",
+    "subtitles": "python3 scripts/generate_subtitles.py",
+    "render": "node scripts/render.mjs",
+    "render:preview": "node scripts/render.mjs --preview",
+    "cover": "node scripts/render.mjs --cover-only",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.538",
+    "@remotion/renderer": "4.0.538",
+    "@remotion/bundler": "4.0.538",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "remotion": "4.0.538"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.12",
+    "typescript": "5.6.3"
+  }
+}

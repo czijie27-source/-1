@@ -1,0 +1,9 @@
+node_modules/
+.cache/
+models/
+output/frames/
+output/*_raw.mp4
+fonts-src/
+out/
+output/preview_960x540.mp4
+__pycache__/

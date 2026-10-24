@@ -1,0 +1,11 @@
+{
+  "_comment": "全片关键节点（单位：秒，绝对时间）。画面（src/scenes）与音乐/音效（scripts/）共同引用，保证声画同步。",
+  "opening": { "lightPoint": 0.8, "lampClink": 2.6, "beamSweep": 4.0, "tunnelReveal": 8.0, "titleIn": 8.8, "titleOut": 14.2 },
+  "miningLife": { "headframe": 15.0, "infoCardIn": 16.6, "infoCardOut": 21.4, "cart": 21.0, "workers": 27.0, "details": 32.8, "crosscut": 37.0 },
+  "awakening": { "dateCard": 42.0, "bell1": 42.6, "bell2": 47.2, "map": 48.0, "newspapers": 55.0, "crowd": 61.0, "silenceText": 65.6 },
+  "strike": { "blackout": 70.0, "date": 71.0, "whistle": 72.2, "boiler": 75.0, "flywheel": 78.0, "flywheelStop": 80.6, "cart": 81.0, "cartStop": 83.4, "lamps": 84.0, "walkout": 89.0, "crowd": 95.0, "title": 97.4 },
+  "solidarity": { "street": 102.0, "procession": 108.5, "document": 113.3, "river": 122.5 },
+  "persistence": { "nightSchool": 134.0, "mutualAid": 139.5, "winter": 144.0, "contract": 148.4, "resumption": 153.5, "victory": 157.0 },
+  "spirit": { "archive": 161.0, "beams": 167.0, "slogan": 172.4, "unity": 178.0, "struggle": 181.5, "patriotism": 184.5 },
+  "ending": { "lamp": 188.0, "modern": 192.5, "youth": 197.5, "finalLamp": 201.0, "finalTitle": 202.8, "finalSlogan": 204.4, "credit": 205.8, "fadeOut": 208.6 }
+}
